@@ -5,7 +5,7 @@ import {
   calculateTip,
   formatDate,
   splitBill,
-} from '../src/core'
+} from '../assignment-1'
 
 describe('日期格式', () => {
   it('2-digit month and day', () => {
