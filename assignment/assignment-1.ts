@@ -1,74 +1,74 @@
 // 輸入
 export type BillInput = {
-  date: string
-  location: string
-  tipPercentage: number
-  items: BillItem[]
+    date: string
+    location: string
+    tipPercentage: number
+    items: BillItem[]
 }
 
 export type BillItem = SharedBillItem | PersonalBillItem
 
 export type CommonBillItem = {
-  price: number
-  name: string
+    price: number
+    name: string
 }
 
 export type SharedBillItem = CommonBillItem & {
-  isShared: true
+    isShared: true
 }
 
 export type PersonalBillItem = CommonBillItem & {
-  isShared: false
-  person: string
+    isShared: false
+    person: string
 }
 
 // 輸出
 export type BillOutput = {
-  date: string
-  location: string
-  subTotal: number
-  tip: number
-  totalAmount: number
-  items: PersonItem[]
+    date: string
+    location: string
+    subTotal: number
+    tip: number
+    totalAmount: number
+    items: PersonItem[]
 }
 
 export type PersonItem = {
-  name: string
-  amount: number
+    name: string
+    amount: number
 }
 
 // 請完成這個函式
 export function splitBill(input: BillInput): BillOutput {
-  let date = formatDate(input.date)
-  let location = input.location
-  let subTotal = calculateSubTotal(input.items)
-  let tip = calculateTip(subTotal, input.tipPercentage)
-  let totalAmount = subTotal + tip
-  let items = calculateItems(input.items, input.tipPercentage)
-  adjustAmount(totalAmount, items)
-  return {
-    date,
-    location,
-    subTotal,
-    tip,
-    totalAmount,
-    items,
-  }
+    let date = formatDate(input.date)
+    let location = input.location
+    let subTotal = calculateSubTotal(input.items)
+    let tip = calculateTip(subTotal, input.tipPercentage)
+    let totalAmount = subTotal + tip
+    let items = calculateItems(input.items, input.tipPercentage)
+    adjustAmount(totalAmount, items)
+    return {
+        date,
+        location,
+        subTotal,
+        tip,
+        totalAmount,
+        items,
+    }
 }
 
 export function formatDate(date: string): string {
-  // input format: YYYY-MM-DD, e.g. "2024-03-21"
-  // output format: YYYY年M月D日, e.g. "2024年3月21日"
-  const [year, month, day] = date.split("-")    
-  return `${year}年${parseInt(month)}月${parseInt(day)}日`
+    // input format: YYYY-MM-DD, e.g. "2024-03-21"
+    // output format: YYYY年M月D日, e.g. "2024年3月21日"
+    const [year, month, day] = date.split("-")
+    return `${year}年${parseInt(month)}月${parseInt(day)}日`
 }
 
 function calculateSubTotal(items: BillItem[]): number {
-  return items.reduce((sum, item) => sum + item.price, 0)
+    return items.reduce((sum, item) => sum + item.price, 0)
 }
 
 export function calculateTip(subTotal: number, tipPercentage: number): number {
-  return Math.round(subTotal * (tipPercentage / 100))
+    return Math.round(subTotal * (tipPercentage / 100))
 }
 
 function scanPersons(items: BillItem[]): string[] {
@@ -121,7 +121,7 @@ function calculatePersonAmount(input: {
 
 function adjustAmount(totalAmount: number, items: PersonItem[]): void {
     let sum = items.reduce((acc, item) => acc + item.amount, 0)
-    let difference = totalAmount - sum  
+    let difference = totalAmount - sum
     if (difference !== 0) {
         // Distribute the difference evenly among all persons
         let adjustment = Math.round(difference / items.length)
