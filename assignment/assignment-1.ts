@@ -43,7 +43,7 @@ export function splitBill(input: BillInput): BillOutput {
     let location = input.location
     let subTotal = calculateSubTotal(input.items)
     let tip = calculateTip(subTotal, input.tipPercentage)
-    let totalAmount = subTotal + tip
+    let totalAmount = Math.round((subTotal + tip) * 10) / 10
     let items = calculateItems(input.items, input.tipPercentage)
     adjustAmount(totalAmount, items)
     return {
@@ -63,7 +63,7 @@ export function formatDate(date: string): string {
     return `${year}年${parseInt(month)}月${parseInt(day)}日`
 }
 
-function calculateSubTotal(items: BillItem[]): number {
+export function calculateSubTotal(items: BillItem[]): number {
     return items.reduce((sum, item) => sum + item.price, 0)
 }
 
@@ -90,12 +90,12 @@ function calculateItems(
     let persons = names.length
     return names.map(name => ({
         name,
-        amount: calculatePersonAmount({
+        amount: round1(calculatePersonAmount({
             items,
             tipPercentage,
             name,
             persons,
-        }),
+        })),
     }))
 }
 
@@ -116,18 +116,28 @@ function calculatePersonAmount(input: {
         .filter(item => item.isShared)
         .reduce((sum, item) => sum + item.price / persons, 0)
     let total = personalTotal + sharedTotal
-    let tip = Math.round(total * (tipPercentage / 100))
+    let tip = Math.round(total * (tipPercentage / 100) * 10) / 10
     return total + tip
 }
 
 function adjustAmount(totalAmount: number, items: PersonItem[]): void {
+// round all amounts to 0.1 first
+    items.forEach(item => item.amount = round1(item.amount))
     let sum = items.reduce((acc, item) => acc + item.amount, 0)
-    let difference = totalAmount - sum
-    if (difference !== 0) {
-        // Distribute the difference evenly among all persons
-        let adjustment = Math.round(difference / items.length)
-        items.forEach(item => {
-            item.amount += adjustment
-        })
+    sum = Math.round(sum * 10) / 10
+    let difference = Math.round((totalAmount - sum) * 10) / 10
+// distribute the difference (should be at most 0.1)
+    if (Math.abs(difference) >= 0.1) {
+        let sign = difference > 0 ? 1 : -1
+        for (let i = 0; Math.abs(difference) >= 0.1 && i < items.length; i++) {
+            items[i].amount = round1(items[i].amount + 0.1 * sign)
+            difference = Math.round((totalAmount - items.reduce((acc, item) => acc + item.amount, 0)) * 10) / 10
+        }
     }
+    // final rounding
+    items.forEach(item => item.amount = round1(item.amount))
+}
+
+function round1(num: number): number {
+    return Math.round(num * 10) / 10
 }
