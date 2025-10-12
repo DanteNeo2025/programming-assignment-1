@@ -88,7 +88,7 @@ function calculateItems(
 ): PersonItem[] {
     let names = scanPersons(items)
     let persons = names.length
-    return names.map(name => ({
+    let result = names.map(name => ({
         name,
         amount: round1(calculatePersonAmount({
             items,
@@ -97,6 +97,7 @@ function calculateItems(
             persons,
         })),
     }))
+    return result
 }
 
 function calculatePersonAmount(input: {
@@ -121,23 +122,17 @@ function calculatePersonAmount(input: {
 }
 
 function adjustAmount(totalAmount: number, items: PersonItem[]): void {
-// round all amounts to 0.1 first
     items.forEach(item => item.amount = round1(item.amount))
     let sum = items.reduce((acc, item) => acc + item.amount, 0)
     sum = Math.round(sum * 10) / 10
     let difference = Math.round((totalAmount - sum) * 10) / 10
-// distribute the difference (should be at most 0.1)
     if (Math.abs(difference) >= 0.1) {
-        let sign = difference > 0 ? 1 : -1
-        for (let i = 0; Math.abs(difference) >= 0.1 && i < items.length; i++) {
-            items[i].amount = round1(items[i].amount + 0.1 * sign)
-            difference = Math.round((totalAmount - items.reduce((acc, item) => acc + item.amount, 0)) * 10) / 10
-        }
+         // 不論向上或向下都調整第一個人
+        items[0].amount = round1(items[0].amount + difference)
     }
-    // final rounding
     items.forEach(item => item.amount = round1(item.amount))
 }
 
 function round1(num: number): number {
     return Math.round(num * 10) / 10
-}
+} 
