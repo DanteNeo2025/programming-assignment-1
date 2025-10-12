@@ -63,7 +63,7 @@ export function formatDate(date: string): string {
     return `${year}年${parseInt(month)}月${parseInt(day)}日`
 }
 
-export function calculateSubTotal(items: BillItem[]): number {
+function calculateSubTotal(items: BillItem[]): number {
     return items.reduce((sum, item) => sum + item.price, 0)
 }
 
