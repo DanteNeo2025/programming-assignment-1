@@ -43,7 +43,7 @@ export function splitBill(input: BillInput): BillOutput {
     let location = input.location
     let subTotal = calculateSubTotal(input.items)
     let tip = calculateTip(subTotal, input.tipPercentage)
-    let totalAmount = Math.round((subTotal + tip) * 10) / 10
+    let totalAmount = round1(subTotal + tip)
     let items = calculateItems(input.items, input.tipPercentage)
     adjustAmount(totalAmount, items)
     return {
@@ -68,7 +68,7 @@ function calculateSubTotal(items: BillItem[]): number {
 }
 
 export function calculateTip(subTotal: number, tipPercentage: number): number {
-// output round to closest 10 cents, e.g 12.34 -> 12.3
+    // output round to closest 10 cents, e.g 12.34 -> 12.3
     return Math.round(subTotal * (tipPercentage / 100) * 10) / 10
 }
 
@@ -90,12 +90,14 @@ function calculateItems(
     let persons = names.length
     let result = names.map(name => ({
         name,
-        amount: round1(calculatePersonAmount({
-            items,
-            tipPercentage,
-            name,
-            persons,
-        })),
+        amount: round1(
+            calculatePersonAmount({
+                items,
+                tipPercentage,
+                name,
+                persons,
+            }),
+        ),
     }))
     return result
 }
@@ -117,22 +119,50 @@ function calculatePersonAmount(input: {
         .filter(item => item.isShared)
         .reduce((sum, item) => sum + item.price / persons, 0)
     let total = personalTotal + sharedTotal
-    let tip = Math.round(total * (tipPercentage / 100) * 10) / 10
+    let tip = total * (tipPercentage / 100)
     return total + tip
 }
 
 function adjustAmount(totalAmount: number, items: PersonItem[]): void {
-    items.forEach(item => item.amount = round1(item.amount))
-    let sum = items.reduce((acc, item) => acc + item.amount, 0)
-    sum = Math.round(sum * 10) / 10
-    let difference = Math.round((totalAmount - sum) * 10) / 10
-    if (Math.abs(difference) >= 0.1) {
-         // 不論向上或向下都調整第一個人
-        items[0].amount = round1(items[0].amount + difference)
+    items.forEach(item => (item.amount = floor1(item.amount)))
+    let payingTotal = round1(items.reduce((acc, item) => acc + item.amount, 0))
+
+    // check if need to pay more
+    while (payingTotal < totalAmount) {
+        // find the one paying the least
+        let sortedItems = items
+            .slice()
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .sort((a, b) => a.amount - b.amount)
+        sortedItems[0].amount = round1(sortedItems[0].amount + 0.1)
+        payingTotal = round1(payingTotal + 0.1)
     }
-    items.forEach(item => item.amount = round1(item.amount))
+
+    // check if need to pay less
+    while (payingTotal > totalAmount) {
+        // find the one paying the most
+        let sortedItems = items
+            .slice()
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .sort((a, b) => b.amount - a.amount)
+        sortedItems[0].amount = round1(sortedItems[0].amount - 0.1)
+        payingTotal = round1(payingTotal - 0.1)
+    }
+
+    // let sum = items.reduce((acc, item) => acc + item.amount, 0)
+    // sum = Math.round(sum * 10) / 10
+    // let difference = Math.round((totalAmount - sum) * 10) / 10
+    // if (Math.abs(difference) >= 0.1) {
+    //     // 不論向上或向下都調整第一個人
+    //     // items[0].amount = round1(items[0].amount + difference)
+    // }
+    // items.forEach(item => (item.amount = round1(item.amount)))
 }
 
 function round1(num: number): number {
     return Math.round(num * 10) / 10
-} 
+}
+
+function floor1(num: number): number {
+    return Math.floor(num * 10) / 10
+}
